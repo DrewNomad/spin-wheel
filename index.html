@@ -1,0 +1,40 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Spin">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Spin the Wheel</title>
+<style>
+body{margin:0;font-family:-apple-system,system-ui;background:#111;color:#fff;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 16px) 16px 40px;gap:16px}
+h1{margin:0;font-size:26px}#wrap{position:relative;width:100%;max-width:340px}
+canvas{width:100%;transition:transform 4s cubic-bezier(.17,.67,.12,.99)}
+#ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid #fff;z-index:2}
+button{font-size:16px;border:none;border-radius:999px;background:#3B82F6;color:#fff;padding:10px 18px;font-weight:700}
+#spin{font-size:22px;padding:14px 40px}#res{font-size:24px;font-weight:700;min-height:30px}
+.row{display:flex;gap:8px;width:100%;max-width:360px}input{flex:1;font-size:16px;padding:12px;border-radius:10px;border:1px solid #444;background:#222;color:#fff}
+#list{width:100%;max-width:360px;display:flex;flex-direction:column;gap:6px}
+.it{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #333;border-radius:10px}.it span{flex:1}.x{background:none;color:#aaa;font-size:18px;padding:0 6px}
+.dot{width:14px;height:14px;border-radius:7px;flex:none!important}
+</style></head><body>
+<h1>Spin the Wheel</h1>
+<div id="wrap"><div id="ptr"></div><canvas id="c" width="640" height="640"></canvas></div>
+<button id="spin">SPIN</button><div id="res"></div>
+<div class="row"><input id="t" placeholder="Add a category"><button id="add">Add</button></div>
+<div id="list"></div>
+<script>
+const C=["#3B82F6","#F59E0B","#06B6D4","#EF4444","#10B981","#8B5CF6","#EC4899","#84CC16"];
+let items=JSON.parse(localStorage.getItem("wheelItems")||"null")||["Pizza","Tacos","Sushi","Burgers","Thai","Salad"];
+let rot=0,busy=false;const cv=document.getElementById("c"),x=cv.getContext("2d");
+function save(){localStorage.setItem("wheelItems",JSON.stringify(items))}
+function draw(){const n=items.length,s=2*Math.PI/Math.max(n,1);x.clearRect(0,0,640,640);
+items.forEach((it,i)=>{x.beginPath();x.moveTo(320,320);x.arc(320,320,310,i*s-Math.PI/2,(i+1)*s-Math.PI/2);x.closePath();x.fillStyle=C[i%C.length];x.fill();x.strokeStyle="#fff";x.lineWidth=3;x.stroke();
+x.save();x.translate(320,320);x.rotate(i*s+s/2-Math.PI/2);x.fillStyle="#fff";x.font="bold "+(n>10?20:28)+"px -apple-system";x.textAlign="right";x.textBaseline="middle";x.fillText(it.length>14?it.slice(0,13)+"…":it,290,0);x.restore()});
+x.beginPath();x.arc(320,320,30,0,7);x.fillStyle="#fff";x.fill();
+document.getElementById("list").innerHTML=items.map((it,i)=>`<div class="it"><span class="dot" style="background:${C[i%C.length]}"></span><span>${it.replace(/</g,"&lt;")}</span><button class="x" onclick="del(${i})">✕</button></div>`).join("")}
+function del(i){items.splice(i,1);save();draw();res.textContent=""}
+function add(){const v=t.value.trim();if(!v)return;items.push(v);t.value="";save();draw();res.textContent=""}
+document.getElementById("add").onclick=add;t.onkeydown=e=>{if(e.key==="Enter")add()};
+document.getElementById("spin").onclick=()=>{if(busy||items.length<2)return;busy=true;res.textContent="";rot+=1800+Math.random()*360;cv.style.transform=`rotate(${rot}deg)`;
+setTimeout(()=>{const a=(360-rot%360)%360;res.textContent="🎉 "+items[Math.floor(a/(360/items.length))%items.length];busy=false},4200)};
+draw();
+</script></body></html>
