@@ -11,21 +11,32 @@ canvas{width:100%;transition:transform 4s cubic-bezier(.17,.67,.12,.99)}
 #ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid #fff;z-index:2}
 button{font-size:16px;border:none;border-radius:999px;background:#3B82F6;color:#fff;padding:10px 18px;font-weight:700}
 #spin{font-size:22px;padding:14px 40px}#res{font-size:24px;font-weight:700;min-height:30px}
-.row{display:flex;gap:8px;width:100%;max-width:360px}input{flex:1;font-size:16px;padding:12px;border-radius:10px;border:1px solid #444;background:#222;color:#fff}
+.row{display:flex;gap:8px;width:100%;max-width:360px}select{flex:1;font-size:16px;padding:10px;border-radius:10px;background:#222;color:#fff;border:1px solid #444}
+input{flex:1;font-size:16px;padding:12px;border-radius:10px;border:1px solid #444;background:#222;color:#fff}
 #list{width:100%;max-width:360px;display:flex;flex-direction:column;gap:6px}
 .it{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #333;border-radius:10px}.it span{flex:1}.x{background:none;color:#aaa;font-size:18px;padding:0 6px}
 .dot{width:14px;height:14px;border-radius:7px;flex:none!important}
 </style></head><body>
 <h1>Spin the Wheel</h1>
+<div class="row"><select id="sel"></select><button id="new">New</button><button id="ren" style="background:#555">Rename</button><button id="dl" style="background:#EF4444">Delete</button></div>
 <div id="wrap"><div id="ptr"></div><canvas id="c" width="640" height="640"></canvas></div>
 <button id="spin">SPIN</button><div id="res"></div>
 <div class="row"><input id="t" placeholder="Add a category"><button id="add">Add</button></div>
 <div id="list"></div>
 <script>
 const C=["#3B82F6","#F59E0B","#06B6D4","#EF4444","#10B981","#8B5CF6","#EC4899","#84CC16"];
-let items=JSON.parse(localStorage.getItem("wheelItems")||"null")||["Pizza","Tacos","Sushi","Burgers","Thai","Salad"];
+let lists=JSON.parse(localStorage.getItem("wheelLists")||"null");
+if(!lists){lists={"Dinner":JSON.parse(localStorage.getItem("wheelItems")||"null")||["Pizza","Tacos","Sushi","Burgers","Thai","Salad"]}}
+let cur=localStorage.getItem("wheelCur");if(!lists[cur])cur=Object.keys(lists)[0];let items=lists[cur];
+const sel=document.getElementById("sel");
+function opts(){sel.innerHTML=Object.keys(lists).map(k=>`<option ${k===cur?"selected":""}>${k.replace(/</g,"&lt;")}</option>`).join("")}
+function pick(k){cur=k;items=lists[k];save();opts();draw();res.textContent=""}
+sel.onchange=()=>pick(sel.value);
+document.getElementById("new").onclick=()=>{const k=(prompt("Name for the new list?")||"").trim();if(!k)return;if(!lists[k])lists[k]=[];pick(k)};
+document.getElementById("ren").onclick=()=>{const k=(prompt("Rename list",cur)||"").trim();if(!k||k===cur||lists[k])return;lists[k]=lists[cur];delete lists[cur];pick(k)};
+document.getElementById("dl").onclick=()=>{if(Object.keys(lists).length<2){alert("Keep at least one list.");return}if(!confirm('Delete "'+cur+'"?'))return;delete lists[cur];pick(Object.keys(lists)[0])};
 let rot=0,busy=false;const cv=document.getElementById("c"),x=cv.getContext("2d");
-function save(){localStorage.setItem("wheelItems",JSON.stringify(items))}
+function save(){lists[cur]=items;localStorage.setItem("wheelLists",JSON.stringify(lists));localStorage.setItem("wheelCur",cur)}
 function draw(){const n=items.length,s=2*Math.PI/Math.max(n,1);x.clearRect(0,0,640,640);
 items.forEach((it,i)=>{x.beginPath();x.moveTo(320,320);x.arc(320,320,310,i*s-Math.PI/2,(i+1)*s-Math.PI/2);x.closePath();x.fillStyle=C[i%C.length];x.fill();x.strokeStyle="#fff";x.lineWidth=3;x.stroke();
 x.save();x.translate(320,320);x.rotate(i*s+s/2-Math.PI/2);x.fillStyle="#fff";x.font="bold "+(n>10?20:28)+"px -apple-system";x.textAlign="right";x.textBaseline="middle";x.fillText(it.length>14?it.slice(0,13)+"…":it,290,0);x.restore()});
@@ -36,5 +47,5 @@ function add(){const v=t.value.trim();if(!v)return;items.push(v);t.value="";save
 document.getElementById("add").onclick=add;t.onkeydown=e=>{if(e.key==="Enter")add()};
 document.getElementById("spin").onclick=()=>{if(busy||items.length<2)return;busy=true;res.textContent="";rot+=1800+Math.random()*360;cv.style.transform=`rotate(${rot}deg)`;
 setTimeout(()=>{const a=(360-rot%360)%360;res.textContent="🎉 "+items[Math.floor(a/(360/items.length))%items.length];busy=false},4200)};
-draw();
+opts();draw();
 </script></body></html>
