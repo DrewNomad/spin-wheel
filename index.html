@@ -27,6 +27,7 @@ input{flex:1;font-size:16px;padding:12px;border-radius:10px;border:1px solid #44
 const C=["#3B82F6","#F59E0B","#06B6D4","#EF4444","#10B981","#8B5CF6","#EC4899","#84CC16"];
 let lists=JSON.parse(localStorage.getItem("wheelLists")||"null");
 if(!lists){lists={"Dinner":JSON.parse(localStorage.getItem("wheelItems")||"null")||["Pizza","Tacos","Sushi","Burgers","Thai","Salad"]}}
+if(!lists["Dice"]&&!localStorage.getItem("diceAdded")){lists["Dice"]=["Die 1","Die 2","Die 3","Die 4","Die 5","Die 6"];localStorage.setItem("diceAdded","1")}
 let cur=localStorage.getItem("wheelCur");if(!lists[cur])cur=Object.keys(lists)[0];let items=lists[cur];
 const sel=document.getElementById("sel");
 function opts(){sel.innerHTML=Object.keys(lists).map(k=>`<option ${k===cur?"selected":""}>${k.replace(/</g,"&lt;")}</option>`).join("")}
@@ -37,15 +38,20 @@ document.getElementById("ren").onclick=()=>{const k=(prompt("Rename list",cur)||
 document.getElementById("dl").onclick=()=>{if(Object.keys(lists).length<2){alert("Keep at least one list.");return}if(!confirm('Delete "'+cur+'"?'))return;delete lists[cur];pick(Object.keys(lists)[0])};
 let rot=0,busy=false;const cv=document.getElementById("c"),x=cv.getContext("2d");
 function save(){lists[cur]=items;localStorage.setItem("wheelLists",JSON.stringify(lists));localStorage.setItem("wheelCur",cur)}
+const PIP={1:[[1,1]],2:[[0,0],[2,2]],3:[[0,0],[1,1],[2,2]],4:[[0,0],[2,0],[0,2],[2,2]],5:[[0,0],[2,0],[1,1],[0,2],[2,2]],6:[[0,0],[2,0],[0,1],[2,1],[0,2],[2,2]]};
+function dieN(it){const m=/^Die ([1-6])$/.exec(it);return m?+m[1]:0}
+function die(g,n,cx,cy,sz){const h=sz/2;g.fillStyle="#fff";g.strokeStyle="#222";g.lineWidth=sz/25;g.beginPath();g.roundRect(cx-h,cy-h,sz,sz,sz/6);g.fill();g.stroke();
+PIP[n].forEach(([a,b])=>{g.beginPath();g.arc(cx-h+sz*(a+1)/4,cy-h+sz*(b+1)/4,sz/11,0,7);g.fillStyle=n==1?"#DC1E28":"#191919";g.fill()})}
+function dieImg(n){const c=document.createElement("canvas");c.width=c.height=120;die(c.getContext("2d"),n,60,60,110);return `<img src="${c.toDataURL()}" style="width:56px;vertical-align:middle">`}
 function draw(){const n=items.length,s=2*Math.PI/Math.max(n,1);x.clearRect(0,0,640,640);
 items.forEach((it,i)=>{x.beginPath();x.moveTo(320,320);x.arc(320,320,310,i*s-Math.PI/2,(i+1)*s-Math.PI/2);x.closePath();x.fillStyle=C[i%C.length];x.fill();x.strokeStyle="#fff";x.lineWidth=3;x.stroke();
-x.save();x.translate(320,320);x.rotate(i*s+s/2-Math.PI/2);x.fillStyle="#fff";x.font="bold "+(n>10?20:28)+"px -apple-system";x.textAlign="right";x.textBaseline="middle";x.fillText(it.length>14?it.slice(0,13)+"…":it,290,0);x.restore()});
+x.save();x.translate(320,320);x.rotate(i*s+s/2-Math.PI/2);x.fillStyle="#fff";x.font="bold "+(n>10?20:28)+"px -apple-system";x.textAlign="right";x.textBaseline="middle";const dn=dieN(it);if(dn){x.rotate(Math.PI/2);die(x,dn,0,-220,n>8?50:80)}else x.fillText(it.length>14?it.slice(0,13)+"…":it,290,0);x.restore()});
 x.beginPath();x.arc(320,320,30,0,7);x.fillStyle="#fff";x.fill();
-document.getElementById("list").innerHTML=items.map((it,i)=>`<div class="it"><span class="dot" style="background:${C[i%C.length]}"></span><span>${it.replace(/</g,"&lt;")}</span><button class="x" onclick="del(${i})">✕</button></div>`).join("")}
+document.getElementById("list").innerHTML=items.map((it,i)=>`<div class="it"><span class="dot" style="background:${C[i%C.length]}"></span><span>${dieN(it)?dieImg(dieN(it)):it.replace(/</g,"&lt;")}</span><button class="x" onclick="del(${i})">✕</button></div>`).join("")}
 function del(i){items.splice(i,1);save();draw();res.textContent=""}
 function add(){const v=t.value.trim();if(!v)return;items.push(v);t.value="";save();draw();res.textContent=""}
 document.getElementById("add").onclick=add;t.onkeydown=e=>{if(e.key==="Enter")add()};
 document.getElementById("spin").onclick=()=>{if(busy||items.length<2)return;busy=true;res.textContent="";rot+=1800+Math.random()*360;cv.style.transform=`rotate(${rot}deg)`;
-setTimeout(()=>{const a=(360-rot%360)%360;res.textContent="🎉 "+items[Math.floor(a/(360/items.length))%items.length];busy=false},4200)};
+setTimeout(()=>{const a=(360-rot%360)%360;const w=items[Math.floor(a/(360/items.length))%items.length];res.innerHTML="🎉 "+(dieN(w)?dieImg(dieN(w)):w.replace(/</g,"&lt;"));busy=false},4200)};
 opts();draw();
 </script></body></html>
